@@ -1,0 +1,21 @@
+{
+  "name": "activepieces-mcp-server",
+  "version": "1.0.0",
+  "description": "Model Context Protocol (MCP) Bridge connecting Claude Desktop and Cursor to Activepieces Automations",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "inspect": "npx @modelcontextprotocol/inspector node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "axios": "^1.7.9",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

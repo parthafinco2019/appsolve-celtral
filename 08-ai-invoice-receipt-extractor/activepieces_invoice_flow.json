@@ -1,0 +1,65 @@
+{
+  "name": "Autonomous AI Invoice and Receipt Extraction Engine",
+  "trigger": {
+    "name": "new_file_in_folder",
+    "type": "PIECE_TRIGGER",
+    "pieceName": "@activepieces/piece-google-drive",
+    "pieceVersion": "0.3.2",
+    "settings": {
+      "folderId": "YOUR_GOOGLE_DRIVE_FOLDER_ID"
+    }
+  },
+  "actions": [
+    {
+      "name": "vision_extractor",
+      "type": "PIECE",
+      "pieceName": "@activepieces/piece-openai",
+      "pieceVersion": "0.4.1",
+      "settings": {
+        "model": "gpt-4o",
+        "prompt": "Extract accounting data from this invoice or receipt image. Return ONLY a strict JSON object with fields: vendor_name (string), invoice_number (string), transaction_date (ISO YYYY-MM-DD), currency (ISO 3-letter code), raw_subtotal (number), raw_tax_amount (number), raw_total_amount (number), confidence_score (number 0-1). If European comma decimal is used, normalize to standard decimal point.",
+        "image": "{trigger.fileUrl}"
+      }
+    },
+    {
+      "name": "math_reconciler",
+      "type": "CODE",
+      "settings": {
+        "sourceCode": "/* See invoice_reconciler.ts */"
+      }
+    },
+    {
+      "name": "append_to_sheets",
+      "type": "PIECE",
+      "pieceName": "@activepieces/piece-google-sheets",
+      "pieceVersion": "0.5.0",
+      "settings": {
+        "spreadsheetId": "YOUR_SPREADSHEET_ID",
+        "sheetName": "Master Financial Ledger",
+        "values": [
+          "{actions.math_reconciler.transaction_id}",
+          "{actions.math_reconciler.date}",
+          "{actions.math_reconciler.vendor_name}",
+          "{actions.math_reconciler.category}",
+          "{actions.math_reconciler.currency}",
+          "{actions.math_reconciler.subtotal}",
+          "{actions.math_reconciler.tax_amount}",
+          "{actions.math_reconciler.total_amount}",
+          "{actions.math_reconciler.verification_status}",
+          "{actions.math_reconciler.document_url}",
+          "{actions.math_reconciler.processed_at}"
+        ]
+      }
+    },
+    {
+      "name": "notify_slack",
+      "type": "PIECE",
+      "pieceName": "@activepieces/piece-slack",
+      "pieceVersion": "0.4.0",
+      "settings": {
+        "channel": "#company-expenses",
+        "text": "🧾 *New Expense Extracted & Reconciled*\n*Vendor:* {actions.math_reconciler.vendor_name}\n*Total:* {actions.math_reconciler.currency} {actions.math_reconciler.total_amount}\n*Status:* {actions.math_reconciler.verification_status}\n*Link:* <{actions.math_reconciler.document_url}|View Document>"
+      }
+    }
+  ]
+}

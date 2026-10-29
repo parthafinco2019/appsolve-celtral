@@ -1,0 +1,3 @@
+Transaction ID,Date,Vendor Name,Category,Currency,Subtotal,Tax Amount,Total Amount,Verification Status,Document URL,Processed Timestamp
+TX_8F3B91C2E0A1,2026-10-28,HETZNER ONLINE GMBH,Cloud Infrastructure,EUR,49.00,9.31,58.31,VERIFIED,https://drive.google.com/file/d/test_hetzner_invoice.pdf,2026-10-28T14:30:15.120Z
+TX_C4D2E891A0F3,2026-10-28,ARTISAN CAFE & BAKERY,Meals & Entertainment,USD,8.50,0.72,9.22,VERIFIED,https://drive.google.com/file/d/test_cafe_receipt.jpg,2026-10-28T14:30:18.940Z

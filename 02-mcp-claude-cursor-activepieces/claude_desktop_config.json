@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "activepieces": {
+      "command": "node",
+      "args": [
+        "E:/E-Drive/TutorialFlow AI/activepieces-mcp/dist/index.js"
+      ],
+      "env": {
+        "AP_WEBHOOK_URL": "https://automation.yourdomain.io/api/v1/webhooks/catch/••••••••••••••••",
+        "AP_MCP_SECRET": "sec_91b8••••••••••••••••••••••••••••••••e4f6"
+      }
+    }
+  }
+}

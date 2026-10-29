@@ -1,0 +1,71 @@
+version: "3.8"
+
+services:
+  activepieces:
+    image: activepieces/activepieces:0.39.0
+    container_name: activepieces_research_app
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8080:80"
+    environment:
+      - AP_ENVIRONMENT=production
+      - AP_FRONTEND_URL=${AP_FRONTEND_URL}
+      - AP_WEBHOOK_TIMEOUT_SECONDS=60
+      - AP_ENCRYPTION_KEY=${AP_ENCRYPTION_KEY}
+      - AP_JWT_SECRET=${AP_JWT_SECRET}
+      - AP_POSTGRES_DATABASE=activepieces
+      - AP_POSTGRES_HOST=postgres
+      - AP_POSTGRES_PORT=5432
+      - AP_POSTGRES_USERNAME=ap_admin
+      - AP_POSTGRES_PASSWORD=${AP_POSTGRES_PASSWORD}
+      - AP_REDIS_HOST=redis
+      - AP_REDIS_PORT=6379
+      - AP_EXECUTION_MODE=UNSANDBOXED
+      - AP_ENFORCE_VERIFIED_EMAIL=false
+      - AP_TELEMETRY=false
+    networks:
+      - ap_net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: activepieces_research_postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=activepieces
+      - POSTGRES_USER=ap_admin
+      - POSTGRES_PASSWORD=${AP_POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ap_admin -d activepieces"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - ap_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: activepieces_research_redis
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - ap_net
+
+volumes:
+  postgres_data:
+    name: activepieces_research_postgres_data
+  redis_data:
+    name: activepieces_research_redis_data
+
+networks:
+  ap_net:
+    name: activepieces_research_network

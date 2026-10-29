@@ -1,0 +1,67 @@
+{
+  "name": "Autonomous Multi-Platform Social Media Repurposer",
+  "trigger": {
+    "name": "new_youtube_video",
+    "type": "PIECE_TRIGGER",
+    "pieceName": "@activepieces/piece-youtube",
+    "pieceVersion": "0.3.0",
+    "settings": {
+      "channelId": "YOUR_YOUTUBE_CHANNEL_ID"
+    }
+  },
+  "actions": [
+    {
+      "name": "twitter_thread_agent",
+      "type": "PIECE",
+      "pieceName": "@activepieces/piece-openai",
+      "pieceVersion": "0.4.1",
+      "settings": {
+        "model": "gpt-4o",
+        "prompt": "You are an elite X (Twitter) ghostwriter. Analyze this video transcript and extract 7 actionable insights. Format as a strict JSON array of strings containing 8 tweets. Tweet 1 is a viral hook with zero emojis. Tweets 2-7 are high-density insights. Tweet 8 is a CTA. Maximum 260 characters per tweet.",
+        "text": "{trigger.description}"
+      }
+    },
+    {
+      "name": "linkedin_agent",
+      "type": "PIECE",
+      "pieceName": "@activepieces/piece-openai",
+      "pieceVersion": "0.4.1",
+      "settings": {
+        "model": "gpt-4o",
+        "prompt": "You are a top-tier LinkedIn thought leadership strategist. Repurpose this video transcript into a compelling 300-word post. Include a 2-line curiosity hook, 3 bullet takeaways with double-line spacing, and an open discussion question.",
+        "text": "{trigger.description}"
+      }
+    },
+    {
+      "name": "character_firewall",
+      "type": "CODE",
+      "settings": {
+        "sourceCode": "/* See content_repurposer.ts */"
+      }
+    },
+    {
+      "name": "notion_ledger",
+      "type": "PIECE",
+      "pieceName": "@activepieces/piece-notion",
+      "pieceVersion": "0.5.2",
+      "settings": {
+        "database_id": "YOUR_NOTION_DATABASE_ID",
+        "properties": {
+          "Content Hash": "{actions.character_firewall.content_hash}",
+          "Source Title": "{trigger.title}",
+          "Status": "Pending Review"
+        }
+      }
+    },
+    {
+      "name": "slack_approval_card",
+      "type": "PIECE",
+      "pieceName": "@activepieces/piece-slack",
+      "pieceVersion": "0.4.0",
+      "settings": {
+        "channel": "#content-approvals",
+        "text": "📢 *New Content Repurposed & Awaiting Approval*\n*Source:* {trigger.title}\n*Thread:* {actions.character_firewall.twitter_thread_count} Tweets\n*Hook:* {actions.character_firewall.twitter_thread[0]}"
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  activepieces:
+    image: activepieces/activepieces:latest
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - OLLAMA_API_URL=http://host.docker.internal:11434

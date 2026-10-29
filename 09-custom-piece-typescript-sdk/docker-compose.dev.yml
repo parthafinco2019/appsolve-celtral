@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  activepieces-dev:
+    image: activepieces/activepieces:0.39.0
+    container_name: activepieces_dev_piece_builder
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      - AP_ENVIRONMENT=development
+      - AP_FRONTEND_URL=${AP_FRONTEND_URL}
+      - AP_ENCRYPTION_KEY=${AP_ENCRYPTION_KEY}
+      - AP_JWT_SECRET=${AP_JWT_SECRET}
+      - AP_POSTGRES_DATABASE=activepieces
+      - AP_POSTGRES_HOST=postgres
+      - AP_POSTGRES_PORT=5432
+      - AP_POSTGRES_USERNAME=ap_admin
+      - AP_POSTGRES_PASSWORD=${AP_POSTGRES_PASSWORD}
+      - AP_REDIS_HOST=redis
+      - AP_REDIS_PORT=6379
+      - AP_EXECUTION_MODE=UNSANDBOXED
+    volumes:
+      # Mount custom pieces directly into the Activepieces runtime directory
+      - ./dist:/usr/src/app/dist/packages/pieces/acme-crm
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - ap_dev_net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: activepieces_dev_postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=activepieces
+      - POSTGRES_USER=ap_admin
+      - POSTGRES_PASSWORD=${AP_POSTGRES_PASSWORD}
+    networks:
+      - ap_dev_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: activepieces_dev_redis
+    restart: always
+    networks:
+      - ap_dev_net
+
+networks:
+  ap_dev_net:
+    name: activepieces_dev_network

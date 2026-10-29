@@ -1,0 +1,120 @@
+{
+  "name": "Enterprise Inbound Lead Qualification Pipeline",
+  "trigger": {
+    "name": "trigger",
+    "type": "PIECE_TRIGGER",
+    "settings": {
+      "pieceName": "@activepieces/piece-webhook",
+      "pieceVersion": "~0.3.0",
+      "triggerName": "catch_webhook",
+      "input": {}
+    },
+    "valid": true
+  },
+  "actions": {
+    "step_1": {
+      "name": "step_1",
+      "type": "CODE",
+      "displayName": "Clean Data & Validate Domain",
+      "settings": {
+        "sourceCode": {
+          "packageJson": "{}",
+          "code": "export const code = async (inputs) => {\n  const rawPhone = inputs.rawPhone || '';\n  const rawEmail = (inputs.rawEmail || '').toLowerCase().trim();\n  const dealSize = Number(inputs.dealSize || 0);\n  \n  // Normalize phone to E.164\n  const cleanedDigits = rawPhone.replace(/\\D/g, '');\n  const cleanPhone = cleanedDigits.length === 10 ? `+1${cleanedDigits}` : `+${cleanedDigits}`;\n  \n  // Validate business email domain\n  const freeProviders = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com'];\n  const domain = rawEmail.split('@')[1] || '';\n  const isBusinessEmail = domain.length > 0 && !freeProviders.includes(domain);\n  \n  // Calculate margin tier\n  const marginTier = dealSize >= 10000 ? 'ENTERPRISE_HIGH' : dealSize >= 2500 ? 'MID_MARKET' : 'ENTRY_TIER';\n  \n  return {\n    cleanPhone,\n    cleanEmail: rawEmail,\n    companyDomain: domain,\n    isBusinessEmail,\n    marginTier,\n    dealSize,\n    processedAt: new Date().toISOString()\n  };\n};"
+        },
+        "input": {
+          "rawPhone": "{{ trigger.body.phone }}",
+          "rawEmail": "{{ trigger.body.email }}",
+          "dealSize": "{{ trigger.body.dealSize }}"
+        }
+      },
+      "valid": true,
+      "nextAction": {
+        "name": "step_2",
+        "type": "BRANCH",
+        "displayName": "Is Enterprise Deal (>= $10,000)?",
+        "settings": {
+          "conditions": [
+            [
+              {
+                "firstValue": "{{ step_1.dealSize }}",
+                "operator": "GREATER_THAN_OR_EQUAL",
+                "secondValue": "10000"
+              },
+              {
+                "firstValue": "{{ step_1.isBusinessEmail }}",
+                "operator": "BOOLEAN_IS_TRUE",
+                "secondValue": ""
+              }
+            ]
+          ]
+        },
+        "valid": true,
+        "onSuccessAction": {
+          "name": "step_3_vip_hubspot",
+          "type": "PIECE",
+          "displayName": "Create VIP Deal in HubSpot",
+          "settings": {
+            "pieceName": "@activepieces/piece-hubspot",
+            "pieceVersion": "~0.4.0",
+            "actionName": "create_contact",
+            "input": {
+              "email": "{{ step_1.cleanEmail }}",
+              "firstName": "{{ trigger.body.firstName }}",
+              "lastName": "{{ trigger.body.lastName }}",
+              "phone": "{{ step_1.cleanPhone }}",
+              "lifecycleStage": "opportunity"
+            }
+          },
+          "valid": true,
+          "nextAction": {
+            "name": "step_4_slack_alert",
+            "type": "PIECE",
+            "displayName": "Alert Executive Deal Room",
+            "settings": {
+              "pieceName": "@activepieces/piece-slack",
+              "pieceVersion": "~0.5.0",
+              "actionName": "send_channel_message",
+              "input": {
+                "channel": "enterprise-deals",
+                "text": "🚀 *New Enterprise Lead Ingested!*",
+                "blocks": [
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*New Enterprise Lead:* ${{ step_1.dealSize }} USD\n*Company Domain:* {{ step_1.companyDomain }}\n*Contact:* {{ trigger.body.firstName }} {{ trigger.body.lastName }} ({{ step_1.cleanPhone }})"
+                    }
+                  }
+                ]
+              }
+            },
+            "valid": true
+          }
+        },
+        "onFailureAction": {
+          "name": "step_3_standard_sheets",
+          "type": "PIECE",
+          "displayName": "Append to Standard Leads Sheet",
+          "settings": {
+            "pieceName": "@activepieces/piece-google-sheets",
+            "pieceVersion": "~0.4.0",
+            "actionName": "insert_row",
+            "input": {
+              "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+              "sheetId": 0,
+              "values": [
+                "{{ step_1.cleanEmail }}",
+                "{{ trigger.body.firstName }}",
+                "{{ trigger.body.lastName }}",
+                "{{ step_1.cleanPhone }}",
+                "{{ step_1.dealSize }}",
+                "{{ step_1.marginTier }}"
+              ]
+            }
+          },
+          "valid": true
+        }
+      }
+    }
+  }
+}

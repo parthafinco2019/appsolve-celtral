@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  activepieces:
+    image: activepieces/activepieces:0.39.1
+    container_name: activepieces_core
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    environment:
+      - AP_ENVIRONMENT=production
+      - AP_EXECUTION_MODE=UNSANDBOXED
+      - AP_ENCRYPTION_KEY=6b8f3d1a8e2c4f0b5a7d9e1f3a5c7b9d2e4f6a8b0c2d4e6f8a1b3c5d7e9f0a2b
+      - AP_JWT_SECRET=4f8a2b0c2d4e6f8a1b3c5d7e9f0a2b6b8f3d1a8e2c4f0b5a7d9e1f3a5c7b9d2e
+      - AP_FRONTEND_URL=https://automation.yourdomain.com
+      - AP_POSTGRES_HOST=postgres
+      - AP_POSTGRES_PORT=5432
+      - AP_POSTGRES_DATABASE=activepieces
+      - AP_POSTGRES_USERNAME=activepieces
+      - AP_POSTGRES_PASSWORD=ActivepiecesSecureVault2026!
+      - AP_REDIS_HOST=redis
+      - AP_REDIS_PORT=6379
+      - AP_WEBHOOK_TIMEOUT_SECONDS=30
+    volumes:
+      - activepieces_data:/root/.activepieces
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: activepieces_postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=activepieces
+      - POSTGRES_USER=activepieces
+      - POSTGRES_PASSWORD=ActivepiecesSecureVault2026!
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U activepieces -d activepieces"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: activepieces_redis
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  activepieces_data:
+  postgres_data:
+  redis_data:

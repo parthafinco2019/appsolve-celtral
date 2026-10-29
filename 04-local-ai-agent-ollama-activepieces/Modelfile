@@ -1,0 +1,16 @@
+# Base Model: Llama 3.1 8B Instruct Quantized 4-Bit K-Medium
+FROM llama3.1:8b-instruct-q4_K_M
+
+# Temperature: 0.1 for deterministic parameter extraction and zero hallucination
+PARAMETER temperature 0.1
+PARAMETER top_p 0.9
+PARAMETER stop "<|eot_id|>"
+PARAMETER stop "<|end_of_text|>"
+
+# Strict System Prompt enforcing JSON-only output
+SYSTEM """You are an autonomous customer support triage agent operating inside an automated enterprise pipeline.
+Your duty is to parse incoming raw customer inquiries, extract critical business entities, and return a STRICT JSON object.
+
+RULES:
+1. Output ONLY valid, raw JSON.
+2. DO NOT wrap JSON inside markdown blocks (no
